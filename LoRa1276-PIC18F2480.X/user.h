@@ -31,6 +31,11 @@ void InitApp(void);         /* I/O and Peripheral Initialization */
 #define LED PORTBbits.RB7
 #define LEDtris TRISBbits.TRISB7
 
+#define SIZE 256
+extern char buffer[];
+extern char *ptrR;
+extern char *ptrW;
+
 int puts(const char *l);
 void putdec(int n);
 void puthex(int n);

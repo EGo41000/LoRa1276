@@ -36,38 +36,65 @@ char *ptr = line;
 
 int t1;
 
+void dump(int adr)
+{
+    char i, j, h;
+                for(i=0; i<4; i++) {
+                    puts("ADR ");
+                    if (adr<16) puts("0");
+                    puthex(adr);
+                    puts(": ");
+                    for(j=0; j<16; j++) {
+                        LORA_NSS=0;
+                        SpiInOut(adr++);
+                        h = SpiInOut(0x00);
+                        if (h<16) puts("0");
+                        puthex(h);
+                        puts(" ");
+                        LORA_NSS=1;
+                    }
+                    puts("\n\r");
+                }
+}
+
 void interrupt isr(void)
 {
     char x, h, u, v;
     int i, j;
 
+    if (TXIE) if (TXIF) {
+        TXREG = *ptrR++;
+        if (ptrR-buffer>=SIZE) ptrR=buffer; // rollover
+        if (ptrR == ptrW) TXIE = 0; // buffer empty
+    }
+
     //puts("I");
-    if (TMR1IF) { // 71 ms
+    if (TMR1IE) if (TMR1IF) { // 71 ms
         x = SPIReadReg(LR_RegIrqFlags);
         if (LORA_DIO0 || (x & 0x40))
             SX1276_RxDone();
         TMR1IF = 0;
     }
 
-    if (TMR0IF) { // 1 sec
+    if (TMR0IE) if (TMR0IF) { // 1 sec
         LED ^= 1; // toggle debug LED
         puts("DIO: ");
         LED ^= 1; // toggle debug LED
-        puts(LORA_DIO0 ? "1 " : "0 ");
-        puts(LORA_DIO1 ? "1 " : "0 ");
-        puts(LORA_DIO2 ? "1 " : "0 ");
-        puts(", T1: ");
+        puts(LORA_DIO0 ? "1" : "0");
+        puts(LORA_DIO1 ? "1" : "0");
+        puts(LORA_DIO2 ? "1" : "0");
+        puts(" T1: ");
         putdec(++t1);
         //utoa(line2, ++t1, 10); puts(line2);
-        puts(", IRQ: ");
+        puts(" IRQ: ");
         x = SPIReadReg(LR_RegIrqFlags);
         puthex(x);
         //utoa(line2, x, 16); puts(line2);
 
-        puts(", ptr: ");
+        puts(" ptr: ");
         putdec(ptr);
-        puts(", RCSTA: ");
-        puthex(RCSTA);
+        //puts(" RCSTA: ");
+        //puthex(RCSTA);
 
         puts(" \r");
 
@@ -75,7 +102,7 @@ void interrupt isr(void)
         SX1276_TX("TMR0", 4);
         SX1276_RX_INIT();
 
-        if (OERR) {CREN=0; CREN=1;}
+        if (OERR) {CREN=0; CREN=1;} // RXSTA, rrcv overwrite
 
         TMR0IF = 0;
     }
@@ -102,6 +129,9 @@ void interrupt isr(void)
             }else if (line[0] == 'c') { // Config
                 SX1276_Config();
                 puts("Config\n\r");
+            }else if (line[0] == 'g') { // Go Timers change
+                TMR0IE = ~TMR0IE;
+                TMR1IE = ~TMR1IE;
             }else if (line[0] == 't') { // Tx
                 SX1276_TX("Hello, world !", 14);
                 puts("Transmit\n\r");
@@ -111,57 +141,39 @@ void interrupt isr(void)
                 SX1276_RX_INIT();
                 puts("Reception\n\r");
             }else if (line[0] == 'd') { // Dump
-                for(i=0x00; i<0x80; i+=0x10) {
-                    puts("ADR "); //strcpy(line2, "ADR ");
-                    if (i<16) puts("0");
-                    puthex(i); //utoa(line2+4, i, 16);
-                    puts(": "); //strcat(line2, ":  ");
-                    //ptr2 = line2+7; //strlen(line2);
-                    for(j=0; j<16; j++) {
-                        LORA_NSS=0;
-                        SpiInOut(i+j);
-                        h = SpiInOut(0x00);
-                        if (h<16) puts("0");
-                        puthex(h);
-                        puts(" ");
-                        /*
-                        u = (h>>4) & 0x0F;
-                        *ptr2++ = ' ';
-                        *ptr2++ = (u>9) ? u+'A'-10 : u+'0';
-                        v = h & 0x0F;
-                        *ptr2++ = (v>9) ? v+'A'-10 : v+'0';
-                        */
-                        LORA_NSS=1;
-                    }
-                    //*ptr2++ = '\0'; strcat(line2, "\n\r"); puts(line2);
-                    puts("\n\r");
-                }
+                dump(0x00);
+            }else if (line[0] == 'D') { // Dump
+                dump(0x40);
 
             }else if (line[0] == '>') {
-                ptr = line;
-                *ptr++ = '<';
+                ptr = line+1;
+                puts("<");
                 LORA_NSS=0;
-                //while (((x=*ptr++) != '\n') && (x!='\r')) {
+                i=0;
                 while ((x=*ptr++) >= '0') {
                     // decode hexa
                     u = x-'0';
                     if (u>9) u = x-'A'+10;
-                    x = *ptr--;
+                    x = *ptr++;
                     v = x-'0';
                     if (v>9) v = x-'A'+10;
-                    h = u<<4 + v;
-                    //h = 0x33;
+                    h = u*16 + v;
+                    //puthex(h);
+                    //puts(":");
                     h = SpiInOut(h); // Send Receive SPI
-                    u = (h>>4) & 0x0F;
-                    *ptr++ = (u>9) ? u+'A'-10 : u+'0';
-                    v = h & 0x0F;
-                    *ptr++ = (v>9) ? v+'A'-10 : v+'0';
+                    if (i==0) {i++; h = u*16 + v;} // restore adr...
+                    if (h<16) puts("0");
+                    puthex(h);
+                    puts(" ");
                 }
                 LORA_NSS=1;
+                puts("\n\r");
+                /*
                 *ptr++ = '\n';
                 *ptr++ = '\r';
                 *ptr++ = '\0';
                 puts(line);
+                */
             }
             /*
             // Output answer

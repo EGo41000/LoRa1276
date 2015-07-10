@@ -20,8 +20,8 @@ void SX1276_Reset(void)
 	LORA_RESET=1;
 	//delay_x10ms(2);		// delay 20ms
         Delay1KTCYx(20); // 20000 @ 8MHz/4 = 10ms
-
 }
+
 void SX1276_Config(void)
 {
 	// In setting mode, RF module should turn to sleep mode
@@ -173,9 +173,3 @@ void SX1276_RxDone(void)
             if (len>2) SX1276_TX("OK", 2); // answer...
             SX1276_RX_INIT();
 }
-
-/*
-
->0200000000
-
- */

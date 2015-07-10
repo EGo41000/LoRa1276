@@ -31,13 +31,20 @@ void putchar (char c)
  }
 */
 
+char buffer[SIZE];
+char *ptrR=buffer;
+char *ptrW=buffer;
+
 int puts(const char *l)
 {
     char c;
     while(c = *l++){
-        while (!TRMT);
-        TXREG = c;
+        //while (!TRMT);
+        //TXREG = c;
+        *ptrW++ = c;
+        if (ptrW-buffer>=SIZE) ptrW=buffer; // rollover
     }
+    TXIE = 1; // Enable transmit
 }
 
 char lined[16];
@@ -171,7 +178,8 @@ void InitApp(void)
     SPEN = 1; // Serial Port enable
     TXEN = 1; // TX enable
     CREN = 1; // Cont Receive enable
-    RCIE = 1;
+    RCIE = 1; // Rcv interrupt
+    // TXIE = 1; => send data
     TRISCbits.RC6 = 0; // TBD
 
     // SPI (CKP=CPOL=0, CKE=/CPHA=1)

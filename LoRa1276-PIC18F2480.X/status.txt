@@ -1,0 +1,121 @@
+	SPIWriteReg(LR_RegOpMode,0x09);         // standby mode
+// get RegOpMode
+>0100
+// RegOpMode=09: Standby
+>8109
+// RegOpMode=0D: Receive
+>810D
+
+
+	SPIWriteReg(LR_RegFrMsb,0x6c);
+	SPIWriteReg(LR_RegFrMid,0x80);
+	SPIWriteReg(LR_RegFrLsb,0x00);		// frequency?434Mhz
+Freq = 32MHz*reg/524288
+Freq(MHz) = 32(MHz)*reg/524288 = reg / 16384
+reg = Freq(MHz)*524288/32(MHz) = Freq(MHz)*16384
+// Get RegFr (6C8000h = 7110656)
+>06000000
+// Freq = 434MHz (6C8000h)
+>866C8000
+// Freq = 432MHz (6C0000h=7077888)
+>866C0000
+// Freq = 400MHz
+>86640000
+
+
+	SPIWriteReg(LR_RegModemConfig1,0b10010010);	// signal bandwidth?500kHz,coding rate = 4/5,explicit Header mode
+	SPIWriteReg(LR_RegModemConfig2,0b01110111);	// spreading factor?7
+	SPIWriteReg(LR_RegSymbTimeoutLsb,0xFF); // max rx timeout
+// Get RegModemConfig1/2
+>1D0000
+// signal bandwidth BW=7.8kHz, coding rate = 4/5, explicit Header mode
+// spreading factor SF=7, CRC, SymbTimeoutMsb
+// RegSymbTimeoutLsb
+// ~0.2kbps
+>9D0287FF
+// signal bandwidth BW=500kHz, coding rate = 4/5, explicit Header mode
+// spreading factor SF=7, CRC, SymbTimeoutMsb
+// RegSymbTimeoutLsb
+// ~22kbps
+>9D9277FF
+// signal bandwidth BW=7.8kHz, coding rate = 4/5, explicit Header mode
+// spreading factor SF=10, CRC, SymbTimeoutMsb
+// RegSymbTimeoutLsb
+// ~0.06kbps
+>9D02A7FF
+
+
+	SPIWriteReg(LR_RegPreambleMsb,0x00);
+	SPIWriteReg(LR_RegPreambleLsb,6);      // preamble 6 bytes
+// Get RegPreamble
+>200000
+// RegPreamble=6
+>A00006
+// RegPreamble=16
+>A00010
+
+
+	SPIWriteReg(LR_RegModemConfig3,0b00001000);	// LNA
+// Get RegModemConfig3
+>2600
+// 
+>A608
+
+
+	RegModemStat
+	RegPktSnrValue
+	RegVersion (42)
+
+
+
+
+#define LR_RegFifo                       0x00
+#define LR_RegOpMode                     0x01
+#define LR_RegBitrateMsb                 0x02
+#define LR_RegBitrateLsb                 0x03
+#define LR_RegFdevMsb                    0x04
+#define LR_RegFdMsb                      0x05
+#define LR_RegFrMsb                      0x06
+#define LR_RegFrMid                      0x07
+#define LR_RegFrLsb                      0x08
+#define LR_RegPaConfig                   0x09
+#define LR_RegPaRamp                     0x0A
+#define LR_RegOcp                        0x0B
+#define LR_RegLna                        0x0C
+#define LR_RegFifoAddrPtr                0x0D
+#define LR_RegFifoTxBaseAddr             0x0E
+#define LR_RegFifoRxBaseAddr             0x0F
+#define LR_RegFifoRxCurrentaddr          0x10
+#define LR_RegIrqFlagsMask               0x11
+#define LR_RegIrqFlags                   0x12
+#define LR_RegRxNbBytes                  0x13
+#define LR_RegRxHeaderCntValueMsb        0x14
+#define LR_RegRxHeaderCntValueLsb        0x15
+#define LR_RegRxPacketCntValueMsb        0x16
+#define LR_RegRxPacketCntValueLsb        0x17
+#define LR_RegModemStat                  0x18
+#define LR_RegPktSnrValue                0x19
+#define LR_RegPktRssiValue               0x1A
+#define LR_RegRssiValue                  0x1B
+#define LR_RegHopChannel                 0x1C
+#define LR_RegModemConfig1               0x1D
+#define LR_RegModemConfig2               0x1E
+#define LR_RegSymbTimeoutLsb             0x1F
+#define LR_RegPreambleMsb                0x20
+#define LR_RegPreambleLsb                0x21
+#define LR_RegPayloadLength              0x22
+#define LR_RegMaxPayloadLength           0x23
+#define LR_RegHopPeriod                  0x24
+#define LR_RegFifoRxByteAddr             0x25
+#define LR_RegModemConfig3               0x26
+#define REG_LR_DIOMAPPING1               0x40
+#define REG_LR_DIOMAPPING2               0x41
+#define REG_LR_VERSION                   0x42
+#define REG_LR_PLLHOP                    0x44
+#define REG_LR_TCXO                      0x4B
+#define REG_LR_PADAC                     0x4D
+#define REG_LR_FORMERTEMP                0x5B
+#define REG_LR_AGCREF                    0x61
+#define REG_LR_AGCTHRESH1                0x62
+#define REG_LR_AGCTHRESH2                0x63
+#define REG_LR_AGCTHRESH3                0x64
